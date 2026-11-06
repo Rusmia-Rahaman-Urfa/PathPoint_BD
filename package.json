@@ -1,0 +1,20 @@
+{
+  "name": "pathpoint-bd",
+  "version": "0.1.0",
+  "private": true,
+  "description": "PathPoint_BD - urban transit & commuter carpooling platform (monorepo root)",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev:server": "npm --prefix server run dev",
+    "dev:web": "npm --prefix web run dev",
+    "build:server": "npm --prefix server run build",
+    "build:web": "npm --prefix web run build",
+    "test:server": "npm --prefix server run test",
+    "typecheck:server": "npm --prefix server run typecheck",
+    "typecheck:web": "npm --prefix web run typecheck",
+    "seed:server": "npm --prefix server run seed",
+    "install:all": "npm --prefix server install && npm --prefix web install"
+  }
+}
