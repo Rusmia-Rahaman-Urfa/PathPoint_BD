@@ -1,0 +1,56 @@
+# Render blueprint for the PathPoint_BD API.
+# Deploy: New + > Blueprint > point at this repository.
+services:
+  - type: web
+    name: pathpoint-bd-api
+    runtime: node
+    plan: free
+    region: singapore
+    rootDir: server
+    # `--include=dev` is required: NODE_ENV=production makes npm omit the
+    # devDependencies that contain the TypeScript compiler.
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm start
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: LOG_LEVEL
+        value: info
+      # Set in the Render dashboard - never committed.
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CORS_ORIGINS
+        sync: false
+      - key: JWT_EXPIRES_IN
+        value: 15m
+      - key: JWT_ISSUER
+        value: pathpoint-bd
+      - key: JWT_AUDIENCE
+        value: pathpoint-bd-api
+      - key: BCRYPT_ROUNDS
+        value: 12
+      - key: RATE_LIMIT_WINDOW_MS
+        value: 60000
+      - key: RATE_LIMIT_MAX
+        value: 120
+      - key: AUTH_RATE_LIMIT_MAX
+        value: 10
+      - key: GEO_DEFAULT_PICKUP_RADIUS_M
+        value: 3000
+      - key: GEO_DEFAULT_DROPOFF_RADIUS_M
+        value: 3000
+      # Live traffic: the in-process simulator feeds the public SSE stream.
+      - key: TRAFFIC_SIM_ENABLED
+        value: true
+      - key: TRAFFIC_SIM_INTERVAL_MS
+        value: 20000
+      - key: SSE_HEARTBEAT_MS
+        value: 15000
+      # Tests are not run during the Render build; skip the ~100 MB mongod
+      # download that mongodb-memory-server would otherwise fetch at install.
+      - key: MONGOMS_DISABLE_POSTINSTALL
+        value: "1"
