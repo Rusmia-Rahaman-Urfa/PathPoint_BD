@@ -16,6 +16,10 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      # Pinned explicitly: Render reads `.node-version` from the repo root, not
+      # from `rootDir: server`, so the runtime version is set here instead.
+      - key: NODE_VERSION
+        value: "24"
       - key: LOG_LEVEL
         value: info
       # Set in the Render dashboard - never committed.
