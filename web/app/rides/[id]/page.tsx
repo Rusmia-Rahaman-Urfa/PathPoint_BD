@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
+import { TransitMap } from '@/components/map/TransitMap';
+import { geoToMapPoint, type MapRoute } from '@/components/map/types';
 import { Alert, Empty, Spinner, StatusBadge } from '@/components/ui';
 import { api } from '@/lib/api';
 import { formatBdt, formatDateTime, relativeTime } from '@/lib/format';
@@ -71,6 +73,11 @@ export default function RideDetailPage() {
   const bookable =
     ride.status === 'published' && ride.seatsAvailable > 0 && !isOwner && Boolean(session);
   const maxSeats = Math.max(1, Math.min(8, ride.seatsAvailable));
+  const mapOrigin = geoToMapPoint(ride.origin, ride.originAddress ?? 'Origin');
+  const mapDestination = geoToMapPoint(ride.destination, ride.destinationAddress ?? 'Destination');
+  const mapRoutes: MapRoute[] = [
+    { id: ride.id, origin: mapOrigin, destination: mapDestination, active: true },
+  ];
 
   const book = async (): Promise<void> => {
     if (!session) return;
@@ -143,6 +150,7 @@ export default function RideDetailPage() {
             <span>{formatDateTime(ride.departureAt)}</span>
             <span>{relativeTime(ride.departureAt)}</span>
             <span>Driver #{shortId(ride.driverId)}</span>
+            <span className="fare-chip">{formatBdt(ride.farePerSeat)} / seat</span>
           </div>
         </div>
         <StatusBadge status={ride.status} />
@@ -150,6 +158,45 @@ export default function RideDetailPage() {
 
       {error ? <Alert tone="error">{error}</Alert> : null}
       {notice ? <Alert tone="success">{notice}</Alert> : null}
+
+      <section className="card map-panel">
+        <div className="map-toolbar">
+          <div>
+            <span className="eyebrow">Route view</span>
+            <h3>
+              {ride.originAddress ?? 'Origin'} <span className="route-arrow">→</span>{' '}
+              {ride.destinationAddress ?? 'Destination'}
+            </h3>
+            <p className="small muted">
+              {ride.distanceMeters !== undefined
+                ? `${(ride.distanceMeters / 1000).toFixed(1)} km direct corridor`
+                : 'Pickup and dropoff plotted from GeoJSON coordinates.'}
+            </p>
+          </div>
+          <div className="map-legend">
+            <span className="map-legend-item">
+              <span className="map-dot origin" />
+              Pickup
+            </span>
+            <span className="map-legend-item">
+              <span className="map-dot destination" />
+              Dropoff
+            </span>
+            <span className="map-legend-item">
+              <span className="map-dot route" />
+              Route
+            </span>
+          </div>
+        </div>
+        <TransitMap
+          origin={mapOrigin}
+          destination={mapDestination}
+          routes={mapRoutes}
+          ariaLabel={`Route map from ${ride.originAddress ?? 'origin'} to ${
+            ride.destinationAddress ?? 'destination'
+          }`}
+        />
+      </section>
 
       <div className="split">
         <section className="card">
@@ -169,6 +216,18 @@ export default function RideDetailPage() {
               <div className="stat-value">{formatBdt(ride.farePerSeat)}</div>
               <div className="stat-label">Fare per seat</div>
             </div>
+          </div>
+
+          <div className="seat-meter" aria-hidden style={{ marginTop: 12 }}>
+            <span
+              style={{
+                width: `${
+                  ride.seatsTotal > 0
+                    ? Math.round((ride.seatsAvailable / ride.seatsTotal) * 100)
+                    : 0
+                }%`,
+              }}
+            />
           </div>
 
           <div className="divider" style={{ margin: '16px 0' }} />
@@ -245,7 +304,7 @@ export default function RideDetailPage() {
 
               <div className="item-head">
                 <span className="small muted">Estimated total</span>
-                <strong>{formatBdt(ride.farePerSeat * Number(seats || 1))}</strong>
+                <span className="fare-chip">{formatBdt(ride.farePerSeat * Number(seats || 1))}</span>
               </div>
 
               <button

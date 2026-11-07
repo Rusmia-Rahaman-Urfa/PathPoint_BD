@@ -2,6 +2,8 @@
 
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
+import { TransitMap } from '@/components/map/TransitMap';
+import { geoToMapPoint, type MapRoute } from '@/components/map/types';
 import {
   Alert,
   Empty,
@@ -48,6 +50,9 @@ const routeLabel = (origin?: string, destination?: string): string =>
   `${origin ?? 'Origin'} → ${destination ?? 'Destination'}`;
 
 const shortId = (id: string): string => id.slice(-6).toUpperCase();
+
+const seatFill = (available: number, total: number): number =>
+  total > 0 ? Math.round((available / total) * 100) : 0;
 
 export default function DashboardPage() {
   const { session, loading: sessionLoading } = useSession();
@@ -242,6 +247,28 @@ export default function DashboardPage() {
     [rides, received, mine, requests],
   );
 
+  const rideRoutes: MapRoute[] = rides.map((ride, index) => ({
+    id: ride.id,
+    origin: geoToMapPoint(ride.origin, ride.originAddress ?? 'Origin'),
+    destination: geoToMapPoint(ride.destination, ride.destinationAddress ?? 'Destination'),
+    active: index === 0,
+  }));
+
+  const bookingSource = bookingTab === 'received' ? received : mine;
+  const bookingRoutes: MapRoute[] = [];
+  const seenRideIds = new Set<string>();
+  for (const booking of bookingSource) {
+    const ride = booking.ride;
+    if (!ride || seenRideIds.has(ride.id)) continue;
+    seenRideIds.add(ride.id);
+    bookingRoutes.push({
+      id: ride.id,
+      origin: geoToMapPoint(ride.origin, ride.originAddress ?? 'Origin'),
+      destination: geoToMapPoint(ride.destination, ride.destinationAddress ?? 'Destination'),
+      active: bookingRoutes.length === 0,
+    });
+  }
+
   if (sessionLoading) {
     return (
       <div className="center">
@@ -253,12 +280,16 @@ export default function DashboardPage() {
   if (!session) {
     return (
       <div className="card auth-card">
-        <div className="card-header">
+        <div className="pass-head">
           <div>
-            <h2>Dashboard needs a session</h2>
-            <p>Sign in to publish rides, manage bookings and watch the live traffic feed.</p>
+            <span className="pass-code">PP / BD · Control room</span>
+            <h3>Dashboard needs a session</h3>
           </div>
+          <span className="pass-badge">Locked</span>
         </div>
+        <p className="small muted" style={{ marginBottom: 16 }}>
+          Sign in to publish rides, manage bookings and watch the live traffic feed.
+        </p>
         <Link href="/" className="btn btn-primary">
           Sign in
         </Link>
@@ -326,6 +357,35 @@ export default function DashboardPage() {
       {tab === 'rides' ? (
         <div className="split">
           <section className="grid" style={{ gap: 14 }}>
+            <div className="card map-panel">
+              <div className="map-toolbar">
+                <div>
+                  <span className="eyebrow">Route board</span>
+                  <h3>Your published corridors</h3>
+                  <p className="small muted">
+                    {rides.length > 0
+                      ? `${rides.length} ride${rides.length === 1 ? '' : 's'} on the board · first highlighted`
+                      : 'Publish a ride to plot its corridor here.'}
+                  </p>
+                </div>
+                <div className="map-legend">
+                  <span className="map-legend-item">
+                    <span className="map-dot origin" />
+                    Pickup
+                  </span>
+                  <span className="map-legend-item">
+                    <span className="map-dot destination" />
+                    Dropoff
+                  </span>
+                  <span className="map-legend-item">
+                    <span className="map-dot route" />
+                    Ride
+                  </span>
+                </div>
+              </div>
+              <TransitMap routes={rideRoutes} ariaLabel="Map of your published ride corridors" />
+            </div>
+
             <div className="card-header" style={{ marginBottom: 0 }}>
               <div>
                 <h3>Published rides</h3>
@@ -343,20 +403,33 @@ export default function DashboardPage() {
                     <article className="item" key={ride.id}>
                       <div className="item-head">
                         <div>
-                          <strong>
-                            {routeLabel(ride.originAddress, ride.destinationAddress)}
-                          </strong>
-                          <div className="item-meta" style={{ marginTop: 4 }}>
+                          <div className="route route-compact">
+                            <span className="route-stop origin" aria-hidden />
+                            <span className="route-text">{ride.originAddress ?? 'Origin'}</span>
+                            <span className="route-arrow">→</span>
+                            <span className="route-stop destination" aria-hidden />
+                            <span className="route-text">
+                              {ride.destinationAddress ?? 'Destination'}
+                            </span>
+                          </div>
+                          <div className="item-meta" style={{ marginTop: 6 }}>
                             <span>{formatDateTime(ride.departureAt)}</span>
                             <span>
                               {ride.seatsAvailable}/{ride.seatsTotal} seats free
                             </span>
-                            <span>{formatBdt(ride.farePerSeat)} / seat</span>
+                            <span className="fare-chip">{formatBdt(ride.farePerSeat)} / seat</span>
                             {ride.vehicle ? (
                               <span>
                                 {ride.vehicle.make} {ride.vehicle.model} · {ride.vehicle.plate}
                               </span>
                             ) : null}
+                          </div>
+                          <div className="seat-meter" aria-hidden>
+                            <span
+                              style={{
+                                width: `${seatFill(ride.seatsAvailable, ride.seatsTotal)}%`,
+                              }}
+                            />
                           </div>
                         </div>
                         <StatusBadge status={ride.status} />
@@ -565,6 +638,40 @@ export default function DashboardPage() {
 
       {tab === 'bookings' ? (
         <section className="grid" style={{ gap: 14 }}>
+          <div className="card map-panel">
+            <div className="map-toolbar">
+              <div>
+                <span className="eyebrow">Booking board</span>
+                <h3>
+                  {bookingTab === 'received' ? 'Rides riders booked' : 'Rides you booked'}
+                </h3>
+                <p className="small muted">
+                  {bookingRoutes.length > 0
+                    ? `${bookingRoutes.length} unique corridor${bookingRoutes.length === 1 ? '' : 's'} plotted`
+                    : 'No booking coordinates yet.'}
+                </p>
+              </div>
+              <div className="map-legend">
+                <span className="map-legend-item">
+                  <span className="map-dot origin" />
+                  Pickup
+                </span>
+                <span className="map-legend-item">
+                  <span className="map-dot destination" />
+                  Dropoff
+                </span>
+                <span className="map-legend-item">
+                  <span className="map-dot route" />
+                  Booking
+                </span>
+              </div>
+            </div>
+            <TransitMap
+              routes={bookingRoutes}
+              ariaLabel={`Map of ${bookingTab === 'received' ? 'received' : 'your'} booking corridors`}
+            />
+          </div>
+
           <div className="tabs" role="tablist" aria-label="Booking lists">
             <button
               type="button"
@@ -598,17 +705,21 @@ export default function DashboardPage() {
                         <strong>
                           {booking.rider?.name ?? `Rider #${shortId(booking.riderId)}`}
                         </strong>
-                        <div className="item-meta" style={{ marginTop: 4 }}>
-                          <span>
-                            {routeLabel(
-                              booking.ride?.originAddress,
-                              booking.ride?.destinationAddress,
-                            )}
+                        <div className="route route-compact" style={{ marginTop: 6 }}>
+                          <span className="route-stop origin" aria-hidden />
+                          <span className="route-text">
+                            {booking.ride?.originAddress ?? 'Origin'}
                           </span>
+                          <span className="route-arrow">→</span>
+                          <span className="route-stop destination" aria-hidden />
+                          <span className="route-text">
+                            {booking.ride?.destinationAddress ?? 'Destination'}
+                          </span>
+                        </div>
+                        <div className="item-meta" style={{ marginTop: 6 }}>
                           <span>{formatDateTime(booking.rideDepartureAt)}</span>
-                          <span>
-                            {booking.seats} seat(s) · {formatBdt(booking.totalFare)}
-                          </span>
+                          <span className="fare-chip">{formatBdt(booking.totalFare)}</span>
+                          <span>{booking.seats} seat(s)</span>
                           {booking.rider?.phone ? <span>{booking.rider.phone}</span> : null}
                         </div>
                       </div>
@@ -678,14 +789,21 @@ export default function DashboardPage() {
                 <article className="item" key={booking.id}>
                   <div className="item-head">
                     <div>
-                      <strong>
-                        {routeLabel(booking.ride?.originAddress, booking.ride?.destinationAddress)}
-                      </strong>
-                      <div className="item-meta" style={{ marginTop: 4 }}>
-                        <span>{formatDateTime(booking.rideDepartureAt)}</span>
-                        <span>
-                          {booking.seats} seat(s) · {formatBdt(booking.totalFare)}
+                      <div className="route route-compact">
+                        <span className="route-stop origin" aria-hidden />
+                        <span className="route-text">
+                          {booking.ride?.originAddress ?? 'Origin'}
                         </span>
+                        <span className="route-arrow">→</span>
+                        <span className="route-stop destination" aria-hidden />
+                        <span className="route-text">
+                          {booking.ride?.destinationAddress ?? 'Destination'}
+                        </span>
+                      </div>
+                      <div className="item-meta" style={{ marginTop: 6 }}>
+                        <span>{formatDateTime(booking.rideDepartureAt)}</span>
+                        <span className="fare-chip">{formatBdt(booking.totalFare)}</span>
+                        <span>{booking.seats} seat(s)</span>
                         <span>Driver #{shortId(booking.driverId)}</span>
                         {booking.ride ? <span>Ride {booking.ride.status}</span> : null}
                       </div>
@@ -749,10 +867,18 @@ export default function DashboardPage() {
                 <article className="item" key={request.id}>
                   <div className="item-head">
                     <div>
-                      <strong>
-                        {routeLabel(request.originAddress, request.destinationAddress)}
-                      </strong>
-                      <div className="item-meta" style={{ marginTop: 4 }}>
+                      <div className="route route-compact">
+                        <span className="route-stop origin" aria-hidden />
+                        <span className="route-text">
+                          {request.originAddress ?? 'Origin'}
+                        </span>
+                        <span className="route-arrow">→</span>
+                        <span className="route-stop destination" aria-hidden />
+                        <span className="route-text">
+                          {request.destinationAddress ?? 'Destination'}
+                        </span>
+                      </div>
+                      <div className="item-meta" style={{ marginTop: 6 }}>
                         <span>{formatDateTime(request.departureAt)}</span>
                         <span>±{request.flexMinutes} min</span>
                         <span>{request.seats} seat(s)</span>

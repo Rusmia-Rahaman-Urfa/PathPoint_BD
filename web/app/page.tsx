@@ -94,6 +94,11 @@ export default function HomePage() {
       <div className="grid" style={{ gap: 28 }}>
         <section className="hero">
           <div className="hero-copy">
+            <span className="hero-rail" aria-hidden>
+              <span className="hero-rail-node" />
+              <span className="hero-rail-node" />
+              <span className="hero-rail-node" />
+            </span>
             <span className="eyebrow">Signed in as {user.role}</span>
             <h1>
               Good to see you, <span className="gradient-text">{user.name.split(' ')[0]}</span>.
@@ -110,19 +115,23 @@ export default function HomePage() {
                 Open dashboard
               </Link>
             </div>
+            <div className="hero-meta">
+              <span>Express 5</span>
+              <span>2dsphere</span>
+              <span>JWT</span>
+              <span>SSE</span>
+            </div>
           </div>
 
-          <div className="card">
-            <div className="card-header">
+          <div className="card auth-card">
+            <div className="pass-head">
               <div>
-                <h3>Your account</h3>
-                <p>Issued by the Express API, stored in this browser only.</p>
+                <span className="pass-code">PP / BD · Account</span>
+                <h3>{user.name}</h3>
               </div>
               <Badge tone="tone-free">{user.role}</Badge>
             </div>
             <dl className="kv">
-              <dt>Name</dt>
-              <dd>{user.name}</dd>
               <dt>Email</dt>
               <dd>{user.email}</dd>
               <dt>Phone</dt>
@@ -136,6 +145,9 @@ export default function HomePage() {
               <dt>Member since</dt>
               <dd>{formatDateTime(user.createdAt)}</dd>
             </dl>
+            <p className="small muted" style={{ marginTop: 14 }}>
+              Issued by the Express API, stored in this browser only.
+            </p>
           </div>
         </section>
 
@@ -148,7 +160,13 @@ export default function HomePage() {
 
         <section className="grid three">
           <article className="feature">
-            <div className="feature-icon">◎</div>
+            <div className="feature-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">
+                <circle cx="12" cy="12" r="8.5" />
+                <path d="M12 3.5v3M12 17.5v3M3.5 12h3M17.5 12h3" strokeLinecap="round" />
+                <circle cx="12" cy="12" r="2.4" fill="currentColor" stroke="none" />
+              </svg>
+            </div>
             <h3>Geospatial matching</h3>
             <p>
               Pickup, dropoff, time, bearing and seat availability scored out of 100 — with the
@@ -156,7 +174,13 @@ export default function HomePage() {
             </p>
           </article>
           <article className="feature">
-            <div className="feature-icon">⌁</div>
+            <div className="feature-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">
+                <rect x="4.5" y="10" width="15" height="9.5" rx="2.4" />
+                <path d="M8 10V7.6a4 4 0 0 1 8 0V10" strokeLinecap="round" />
+                <circle cx="12" cy="14.7" r="1.5" fill="currentColor" stroke="none" />
+              </svg>
+            </div>
             <h3>Atomic bookings</h3>
             <p>
               One conditional update reserves seats, and a compensating write restores them on
@@ -164,7 +188,15 @@ export default function HomePage() {
             </p>
           </article>
           <article className="feature">
-            <div className="feature-icon">≋</div>
+            <div className="feature-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">
+                <path
+                  d="M2.5 12.5h4l2.2-5.4 3.4 10.2 2.4-6 1.7 3.2h5.3"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </div>
             <h3>Live traffic</h3>
             <p>
               Congestion events stream over Server-Sent Events, so the dashboard updates without a
@@ -180,6 +212,11 @@ export default function HomePage() {
     <div className="grid" style={{ gap: 28 }}>
       <section className="hero">
         <div className="hero-copy">
+          <span className="hero-rail" aria-hidden>
+            <span className="hero-rail-node" />
+            <span className="hero-rail-node" />
+            <span className="hero-rail-node" />
+          </span>
           <span className="eyebrow">Dhaka · Chattogram</span>
           <h1>
             Your city, <span className="gradient-text">matched</span> to your commute.
@@ -197,7 +234,7 @@ export default function HomePage() {
               Browse rides
             </Link>
           </div>
-          <div className="item-meta">
+          <div className="hero-meta">
             <span>Express 5</span>
             <span>MongoDB 2dsphere</span>
             <span>JWT</span>
@@ -207,6 +244,14 @@ export default function HomePage() {
         </div>
 
         <div className="card auth-card" id="signin">
+          <div className="pass-head">
+            <div>
+              <span className="pass-code">PP / BD · Access pass</span>
+              <h3>{mode === 'login' ? 'Commuter sign-in' : 'Create your pass'}</h3>
+            </div>
+            <span className="pass-badge">Live</span>
+          </div>
+
           <div className="auth-switch" role="tablist" aria-label="Authentication mode">
             <button
               type="button"
@@ -318,7 +363,7 @@ export default function HomePage() {
           </div>
           <Badge tone="tone-moderate">demo</Badge>
         </div>
-        <div className="grid three">
+        <div className="grid three demo-grid">
           {DEMO_ACCOUNTS.map((account) => (
             <div className="item" key={account.email}>
               <div className="item-head">

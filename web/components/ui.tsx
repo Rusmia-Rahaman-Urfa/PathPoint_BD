@@ -11,7 +11,12 @@ export function Alert({
   tone?: 'info' | 'error' | 'success';
   children: ReactNode;
 }) {
-  return <div className={`alert alert-${tone}`}>{children}</div>;
+  return (
+    <div className={`alert alert-${tone}`} role={tone === 'error' ? 'alert' : 'status'}>
+      <span className="alert-mark" aria-hidden />
+      <span>{children}</span>
+    </div>
+  );
 }
 
 export function Badge({ tone, children }: { tone: string; children: ReactNode }) {
@@ -23,12 +28,17 @@ export function StatusBadge({ status }: { status: string }) {
 }
 
 export function Empty({ children }: { children: ReactNode }) {
-  return <div className="empty">{children}</div>;
+  return (
+    <div className="empty">
+      <span className="empty-mark" aria-hidden />
+      <span>{children}</span>
+    </div>
+  );
 }
 
 export function Spinner({ label }: { label?: string }) {
   return (
-    <div className="btn-row" style={{ alignItems: 'center' }}>
+    <div className="btn-row" style={{ alignItems: 'center' }} aria-live="polite">
       <span className="spinner" aria-hidden />
       {label ? <span className="small muted">{label}</span> : null}
     </div>
@@ -44,10 +54,12 @@ export function ScoreRing({ score }: { score: number }) {
         className="score-ring"
         style={{ '--value': rounded } as CSSProperties}
         title={`${rounded} of 100`}
+        role="img"
+        aria-label={`Match score ${rounded} of 100`}
       >
         <span>{rounded}</span>
       </div>
-      <div>
+      <div className="score-meta">
         <div className={`factor-label ${scoreTone(score)}`}>Match</div>
         <div className="small muted">/ 100</div>
       </div>
@@ -98,7 +110,7 @@ export function Breakdown({ breakdown }: { breakdown: MatchBreakdown }) {
             {Math.round(row.points)}
             <span className="muted small">/{row.max}</span>
           </div>
-          <div className="factor-bar">
+          <div className="factor-bar" aria-hidden>
             <span
               style={{
                 width: `${Math.max(0, Math.min(100, (row.points / row.max) * 100))}%`,

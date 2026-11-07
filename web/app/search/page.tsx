@@ -2,6 +2,8 @@
 
 import Link from 'next/link';
 import { useState, type FormEvent } from 'react';
+import { TransitMap } from '@/components/map/TransitMap';
+import { geoToMapPoint } from '@/components/map/types';
 import {
   Alert,
   Badge,
@@ -40,28 +42,35 @@ function MatchResult({
 }) {
   const { ride, score, breakdown } = card;
   const driverTag = ride.driverId.slice(-6).toUpperCase();
+  const seatFill =
+    ride.seatsTotal > 0 ? Math.round((ride.seatsAvailable / ride.seatsTotal) * 100) : 0;
 
   return (
     <article className="card flat match-card">
       <div className="match-top">
         <div>
           <div className="route">
-            {ride.originAddress ?? 'Origin'}
+            <span className="route-stop origin" aria-hidden />
+            <span className="route-text">{ride.originAddress ?? 'Origin'}</span>
             <span className="route-arrow">→</span>
-            {ride.destinationAddress ?? 'Destination'}
+            <span className="route-stop destination" aria-hidden />
+            <span className="route-text">{ride.destinationAddress ?? 'Destination'}</span>
           </div>
-          <div className="item-meta" style={{ marginTop: 6 }}>
+          <div className="item-meta" style={{ marginTop: 8 }}>
             <span>{formatDateTime(ride.departureAt)}</span>
             <span>
               {ride.seatsAvailable} of {ride.seatsTotal} seats free
             </span>
-            <span>{formatBdt(ride.farePerSeat)} / seat</span>
+            <span className="fare-chip">{formatBdt(ride.farePerSeat)} / seat</span>
             {ride.vehicle ? (
               <span>
                 {ride.vehicle.make} {ride.vehicle.model} · {ride.vehicle.ac ? 'AC' : 'Non-AC'}
               </span>
             ) : null}
             <span>Driver #{driverTag}</span>
+          </div>
+          <div className="seat-meter" aria-hidden>
+            <span style={{ width: `${seatFill}%` }} />
           </div>
         </div>
         <ScoreRing score={score} />
@@ -224,12 +233,16 @@ export default function SearchPage() {
   if (!session) {
     return (
       <div className="card auth-card">
-        <div className="card-header">
+        <div className="pass-head">
           <div>
-            <h2>Sign in to search</h2>
-            <p>Matching is authenticated so every search is tied to a real rider.</p>
+            <span className="pass-code">PP / BD · Search</span>
+            <h3>Sign in to search</h3>
           </div>
+          <span className="pass-badge">Locked</span>
         </div>
+        <p className="small muted" style={{ marginBottom: 16 }}>
+          Matching is authenticated so every search is tied to a real rider.
+        </p>
         <div className="btn-row">
           <Link href="/" className="btn btn-primary">
             Sign in
@@ -243,6 +256,19 @@ export default function SearchPage() {
   }
 
   const matches = result?.matches ?? [];
+  const originPlace = placeById(originId);
+  const destinationPlace = placeById(destinationId);
+  const mapOrigin = geoToMapPoint(toPoint(originPlace), originPlace.label);
+  const mapDestination = geoToMapPoint(toPoint(destinationPlace), destinationPlace.label);
+  const mapRoutes = matches.map((card, index) => ({
+    id: card.ride.id,
+    origin: geoToMapPoint(card.ride.origin, card.ride.originAddress ?? 'Origin'),
+    destination: geoToMapPoint(
+      card.ride.destination,
+      card.ride.destinationAddress ?? 'Destination',
+    ),
+    active: index === 0,
+  }));
 
   return (
     <div className="grid" style={{ gap: 22 }}>
@@ -261,6 +287,42 @@ export default function SearchPage() {
           {session.user.role}
         </Badge>
       </div>
+
+      <section className="card map-panel">
+        <div className="map-toolbar">
+          <div>
+            <span className="eyebrow">Corridor view</span>
+            <h3>
+              {originPlace.short} <span className="route-arrow">→</span> {destinationPlace.short}
+            </h3>
+            <p className="small muted">
+              {matches.length > 0
+                ? `${matches.length} scored ride${matches.length === 1 ? '' : 's'} plotted · top match highlighted`
+                : 'Pick a corridor and run a search to plot scored rides.'}
+            </p>
+          </div>
+          <div className="map-legend">
+            <span className="map-legend-item">
+              <span className="map-dot origin" />
+              Pickup
+            </span>
+            <span className="map-legend-item">
+              <span className="map-dot destination" />
+              Dropoff
+            </span>
+            <span className="map-legend-item">
+              <span className="map-dot route" />
+              Match
+            </span>
+          </div>
+        </div>
+        <TransitMap
+          origin={mapOrigin}
+          destination={mapDestination}
+          routes={mapRoutes}
+          ariaLabel={`Map of the ${originPlace.short} to ${destinationPlace.short} corridor`}
+        />
+      </section>
 
       <div className="split">
         <section className="card">
