@@ -2,9 +2,9 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { Alert, Badge, Field, Spinner, Stat } from '@/components/ui';
-import { api } from '@/lib/api';
+import { API_URL, api } from '@/lib/api';
 import { formatDateTime } from '@/lib/format';
 import { useSession } from '@/lib/useSession';
 import type { AuthResponse, Role } from '@/lib/types';
@@ -31,6 +31,26 @@ export default function HomePage() {
   const [role, setRole] = useState<'rider' | 'driver'>('rider');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Wake the Render free instance as soon as the page mounts, so the backend is
+  // already spinning up before the user submits the form.
+  useEffect(() => {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 20_000);
+
+    void fetch(`${API_URL}/health`, {
+      method: 'GET',
+      cache: 'no-store',
+      signal: controller.signal,
+    })
+      .catch(() => undefined)
+      .finally(() => clearTimeout(timeout));
+
+    return () => {
+      clearTimeout(timeout);
+      controller.abort();
+    };
+  }, []);
 
   const signIn = async (nextEmail: string, nextPassword: string): Promise<void> => {
     setBusy(true);
