@@ -5,9 +5,9 @@ import { divIcon, latLngBounds, type LatLngExpression } from 'leaflet';
 import { MapContainer, Marker, Polyline, Popup, TileLayer, useMap } from 'react-leaflet';
 import { CITY_CENTERS, DHAKA_CENTER, type MapPoint, type MapRoute, type TransitMapProps } from './types';
 
-const TILE_URL = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+const TILE_URL = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
 const ATTRIBUTION =
-  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>';
+  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 
 const pinIcon = (kind: 'origin' | 'destination') =>
   divIcon({
@@ -66,15 +66,15 @@ function RouteLine({ route }: { route: MapRoute }) {
         <Polyline
           positions={positions}
           interactive={false}
-          pathOptions={{ color: '#14B8A6', weight: 11, opacity: 0.12, lineCap: 'round' }}
+          pathOptions={{ color: '#14B8A6', weight: 11, opacity: 0.16, lineCap: 'round' }}
         />
       ) : null}
       <Polyline
         positions={positions}
         pathOptions={{
-          color: route.active ? '#2DD4BF' : '#38BDF8',
+          color: route.active ? '#0D9488' : '#0EA5E9',
           weight: route.active ? 4 : 2.5,
-          opacity: route.active ? 0.95 : 0.42,
+          opacity: route.active ? 0.95 : 0.55,
           dashArray: route.active ? undefined : '6 9',
           lineCap: 'round',
         }}
@@ -113,7 +113,7 @@ export default function TransitMapCanvas({
       className="pp-map"
       style={{ height: '100%', width: '100%' }}
     >
-      <TileLayer url={TILE_URL} attribution={ATTRIBUTION} subdomains="abcd" maxZoom={20} />
+      <TileLayer url={TILE_URL} attribution={ATTRIBUTION} subdomains="abc" maxZoom={19} />
       <FitBounds points={fitPoints} />
 
       {routes.map((route) => (
