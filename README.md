@@ -579,32 +579,6 @@ npm test
 
 ---
 
-## Demo script (≈3 minutes)
-
-1. **Seed and start** — `cd server && npm run seed && npm run dev`, then
-   `cd web && npm run dev`. Open `http://localhost:3000`.
-2. **Sign in as a rider** — on `/`, click *Sign in as Sabrina* (or use
-   `rider.dhanmondi@pathpoint.test` / `PathPoint123`).
-3. **Search** — `/search` → Banani → Dhanmondi 27, a departure a few hours out,
-   flex 30. Point out the 0–100 score ring and the five-factor breakdown
-   (pickup, dropoff, time, bearing, seats). Book a seat.
-4. **Switch to the driver** — sign out, click *Sign in as Nusrat*. On
-   `/dashboard`, the booking appears under **Bookings → Received as driver**.
-   Confirm it. Point out that confirming is an atomic, idempotent transition.
-5. **Reverse matching** — under **My rides**, click **Find riders** on a ride.
-   The seeded rider requests that fit the corridor appear, filtered by their own
-   flex window, dropoff radius and budget.
-6. **Live traffic** — open **Live traffic**. The SSE feed is already connected;
-   click **Emit event** and watch a new congestion row appear without a refresh.
-7. **Concurrency (optional)** — `cd server && npm test` and show the race tests:
-   5 riders for 2 seats, exactly 2 succeed.
-8. **Docs** — open `http://localhost:4000/docs` for the Scalar reference. Every
-   request schema is generated from the same Zod object used at runtime.
-
-Reset between demos: `npm run seed` (idempotent, demo accounts only).
-
----
-
 ## Deployment
 
 ### MongoDB Atlas
